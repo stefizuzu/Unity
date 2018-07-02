@@ -1,0 +1,106 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour {
+
+    #region Variables
+    Animator animator;
+    [SerializeField] public float updateSpeed;
+    [SerializeField] public float updateStrafe;
+    public float WalkSpeed = 1.7f;
+    public float RunSpeed = 5.0f;
+    public float CrouchSpeed = 1.0f;
+    public float BackingSpeed = 1.4f;
+    public float StrafeSpeed = 90.0f;
+
+
+    public bool activity = false;
+    public bool isDead = false;
+    public bool isCoroutineExec = false;
+    public bool isCrouched = false;
+    #endregion
+
+    void Start () {
+        animator = GetComponent<Animator>();
+	}
+	
+	void Update () {
+        if(!isDead ) Movement();
+        if (!isDead) Activity();
+	}
+
+    void Movement(){
+        float move = Input.GetAxis("Vertical") * updateSpeed;
+        float strafe = Input.GetAxis("Horizontal") * updateStrafe;
+        move *= Time.deltaTime;
+        strafe *= Time.deltaTime;
+
+        if(Input.GetKey(KeyCode.W) && !activity){
+            animator.SetBool("isBacking", false);
+            animator.SetBool("isRunning", false);
+            animator.SetBool("crouchwalk", false); 
+            updateStrafe = StrafeSpeed;
+            transform.Translate(0, 0, move);
+            transform.Rotate(0, strafe, 0);
+            animator.SetBool("isWalking", true);
+            if(isCrouched)
+            {
+                updateSpeed = CrouchSpeed;
+                animator.SetBool("crouchwalk", true);
+                animator.SetFloat("speed", 1.0f);
+            }
+            else if (Input.GetKey(KeyCode.LeftShift)){
+                updateSpeed = RunSpeed;
+                animator.SetBool("isRunning", true);
+            }
+            else{
+                animator.SetBool("crouchwalk", false); 
+                updateSpeed = WalkSpeed;
+                animator.SetBool("isRunning", false);
+            }
+        }
+    
+        else if (Input.GetKey(KeyCode.S) && !activity){ 
+            animator.SetBool("isWalking", false); 
+            animator.SetBool("isRunning", false); 
+            updateSpeed = BackingSpeed;
+            updateStrafe = StrafeSpeed;
+            transform.Translate(0, 0, move);
+            transform.Rotate(0, strafe, 0);
+            animator.SetBool("isBacking", true);
+            if (isCrouched)
+            {
+                updateSpeed = 0.4f;
+                animator.SetBool("crouchwalk", true);
+                animator.SetFloat("speed", -0.9f);
+            }
+        }
+        else{
+            animator.SetBool("isBacking", false);  
+            animator.SetBool("isWalking", false); 
+            animator.SetBool("isRunning", false); 
+            animator.SetBool("crouchwalk", false);
+        }
+    }
+    void Activity(){
+        if (Input.GetKeyDown(KeyCode.C)) StartCoroutine("Crouch");
+    }
+
+    IEnumerator Crouch(){
+        activity = true;
+        if (!isCrouched)
+        {
+            animator.SetBool("crouch", true);
+            isCrouched = true;
+        }
+        else if (isCrouched)
+        {
+            animator.SetBool("crouch", false);
+            isCrouched = false;
+        }
+        yield return new WaitForSeconds(0.8f);
+        activity = false;
+        StopCoroutine("Crouch");
+    }
+}
